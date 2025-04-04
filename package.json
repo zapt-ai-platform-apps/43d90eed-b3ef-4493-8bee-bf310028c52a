@@ -1,7 +1,7 @@
 {
-    "name": "reactjs-vite-tailwind-vercel",
+    "name": "path-recorder",
     "version": "1.0.0",
-    "description": "ReactJS app with Vite, Tailwind",
+    "description": "App to record travel paths for later use",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -12,7 +12,11 @@
     "dependencies": {
         "@sentry/browser": "^8.41.0",
         "react": "^18.2.0",
-        "react-dom": "^18.2.0"
+        "react-dom": "^18.2.0",
+        "react-router-dom": "^6.22.2",
+        "leaflet": "^1.9.4",
+        "react-leaflet": "^4.2.1",
+        "date-fns": "^3.3.1"
     },
     "devDependencies": {
         "@vitejs/plugin-react": "^4.3.4",
