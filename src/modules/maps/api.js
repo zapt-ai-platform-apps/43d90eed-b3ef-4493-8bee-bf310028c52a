@@ -1,24 +1,54 @@
 import mapService from './internal/mapService';
+import { validatePosition, validateMapOptions, validatePath } from './validators';
 
 export const api = {
   // Initialize a map on the given element ID
   initializeMap(elementId, options = {}) {
-    return mapService.initializeMap(elementId, options);
+    const validatedOptions = validateMapOptions(options, {
+      actionName: 'initializeMap',
+      location: 'maps/api.js',
+      direction: 'incoming',
+      moduleFrom: 'client',
+      moduleTo: 'maps'
+    });
+    return mapService.initializeMap(elementId, validatedOptions);
   },
   
   // Set the center of the map to the given coordinates
   setCenter(latitude, longitude, zoom = null) {
-    mapService.setCenter(latitude, longitude, zoom);
+    const position = { latitude, longitude };
+    const validatedPosition = validatePosition(position, {
+      actionName: 'setCenter',
+      location: 'maps/api.js',
+      direction: 'incoming',
+      moduleFrom: 'client',
+      moduleTo: 'maps'
+    });
+    mapService.setCenter(validatedPosition.latitude, validatedPosition.longitude, zoom);
   },
   
   // Update or create the current position marker
   updateCurrentPosition(position) {
-    mapService.updateCurrentPosition(position);
+    const validatedPosition = validatePosition(position, {
+      actionName: 'updateCurrentPosition',
+      location: 'maps/api.js',
+      direction: 'incoming',
+      moduleFrom: 'client',
+      moduleTo: 'maps'
+    });
+    mapService.updateCurrentPosition(validatedPosition);
   },
   
   // Display a path on the map
   displayPath(path, fitBounds = true) {
-    return mapService.displayPath(path, fitBounds);
+    const validatedPath = validatePath(path, {
+      actionName: 'displayPath',
+      location: 'maps/api.js',
+      direction: 'incoming',
+      moduleFrom: 'client',
+      moduleTo: 'maps'
+    });
+    return mapService.displayPath(validatedPath, fitBounds);
   },
   
   // Clear all layers from the map

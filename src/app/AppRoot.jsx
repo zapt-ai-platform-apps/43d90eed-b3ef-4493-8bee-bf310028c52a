@@ -1,8 +1,8 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import AppRoutes from './app/routes';
+import AppRoutes from './routes';
 
-const App = () => {
+const AppRoot = () => {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gray-100 text-gray-900">
@@ -12,4 +12,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default AppRoot;

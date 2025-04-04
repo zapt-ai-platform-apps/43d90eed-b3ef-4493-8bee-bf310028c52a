@@ -2,6 +2,12 @@ import recordingService from './internal/recordingService';
 import pathStorage from './internal/pathStorage';
 import { eventBus } from '../core/events';
 import { events } from './events';
+import { 
+  validatePath, 
+  validatePathDetails, 
+  validateRecordingStats,
+  validatePathPoint
+} from './validators';
 
 export const api = {
   // Recording methods
@@ -10,7 +16,17 @@ export const api = {
   },
   
   async stopRecording() {
-    return recordingService.stopRecording();
+    const path = await recordingService.stopRecording();
+    if (path) {
+      return validatePath(path, {
+        actionName: 'stopRecording',
+        location: 'paths/api.js',
+        direction: 'outgoing',
+        moduleFrom: 'paths',
+        moduleTo: 'client'
+      });
+    }
+    return null;
   },
   
   cancelRecording() {
@@ -18,24 +34,65 @@ export const api = {
   },
   
   updateRecordingDetails(details) {
-    recordingService.updateRecordingDetails(details);
+    const validatedDetails = validatePathDetails(details, {
+      actionName: 'updateRecordingDetails',
+      location: 'paths/api.js',
+      direction: 'incoming',
+      moduleFrom: 'client',
+      moduleTo: 'paths'
+    });
+    recordingService.updateRecordingDetails(validatedDetails);
   },
   
   getCurrentStats() {
-    return recordingService.getCurrentStats();
+    const stats = recordingService.getCurrentStats();
+    if (!stats) return null;
+    
+    return validateRecordingStats(stats, {
+      actionName: 'getCurrentStats',
+      location: 'paths/api.js',
+      direction: 'outgoing',
+      moduleFrom: 'paths',
+      moduleTo: 'client'
+    });
   },
   
   // Path storage methods
   async getAllPaths() {
-    return pathStorage.getAllPaths();
+    const paths = await pathStorage.getAllPaths();
+    return paths.map(path => 
+      validatePath(path, {
+        actionName: 'getAllPaths',
+        location: 'paths/api.js',
+        direction: 'outgoing',
+        moduleFrom: 'paths',
+        moduleTo: 'client'
+      })
+    );
   },
   
   async getPathById(id) {
-    return pathStorage.getPathById(id);
+    const path = await pathStorage.getPathById(id);
+    if (!path) return null;
+    
+    return validatePath(path, {
+      actionName: 'getPathById',
+      location: 'paths/api.js',
+      direction: 'outgoing',
+      moduleFrom: 'paths',
+      moduleTo: 'client'
+    });
   },
   
   async savePath(path) {
-    return pathStorage.savePath(path);
+    const validatedPath = validatePath(path, {
+      actionName: 'savePath',
+      location: 'paths/api.js',
+      direction: 'incoming',
+      moduleFrom: 'client',
+      moduleTo: 'paths'
+    });
+    return pathStorage.savePath(validatedPath);
   },
   
   async deletePath(id) {
@@ -47,32 +104,102 @@ export const api = {
   },
   
   async updatePathDetails(id, details) {
-    const result = await pathStorage.updatePathDetails(id, details);
+    const validatedDetails = validatePathDetails(details, {
+      actionName: 'updatePathDetails',
+      location: 'paths/api.js',
+      direction: 'incoming',
+      moduleFrom: 'client',
+      moduleTo: 'paths'
+    });
+    
+    const result = await pathStorage.updatePathDetails(id, validatedDetails);
     if (result) {
-      eventBus.publish(events.PATH_UPDATED, result);
+      const validatedResult = validatePath(result, {
+        actionName: 'updatePathDetails',
+        location: 'paths/api.js',
+        direction: 'outgoing',
+        moduleFrom: 'paths',
+        moduleTo: 'client'
+      });
+      eventBus.publish(events.PATH_UPDATED, validatedResult);
+      return validatedResult;
     }
-    return result;
+    return null;
   },
   
-  // Event subscriptions
+  // Event subscriptions with validation
   onRecordingStarted(callback) {
-    return eventBus.subscribe(events.RECORDING_STARTED, callback);
+    return eventBus.subscribe(events.RECORDING_STARTED, (recording) => {
+      const validatedRecording = validatePath(recording, {
+        actionName: 'onRecordingStarted',
+        location: 'paths/api.js',
+        direction: 'outgoing',
+        moduleFrom: 'paths',
+        moduleTo: 'client'
+      });
+      callback(validatedRecording);
+    });
   },
   
   onRecordingCompleted(callback) {
-    return eventBus.subscribe(events.RECORDING_COMPLETED, callback);
+    return eventBus.subscribe(events.RECORDING_COMPLETED, (recording) => {
+      const validatedRecording = validatePath(recording, {
+        actionName: 'onRecordingCompleted',
+        location: 'paths/api.js',
+        direction: 'outgoing',
+        moduleFrom: 'paths',
+        moduleTo: 'client'
+      });
+      callback(validatedRecording);
+    });
   },
   
   onRecordingCanceled(callback) {
-    return eventBus.subscribe(events.RECORDING_CANCELED, callback);
+    return eventBus.subscribe(events.RECORDING_CANCELED, (recording) => {
+      // May be incomplete due to cancellation, so wrap in try/catch
+      try {
+        const validatedRecording = validatePath(recording, {
+          actionName: 'onRecordingCanceled',
+          location: 'paths/api.js',
+          direction: 'outgoing',
+          moduleFrom: 'paths',
+          moduleTo: 'client'
+        });
+        callback(validatedRecording);
+      } catch (error) {
+        console.error('Canceled recording validation failed, passing raw data:', error);
+        callback(recording);
+      }
+    });
   },
   
   onRecordingUpdated(callback) {
-    return eventBus.subscribe(events.RECORDING_UPDATED, callback);
+    return eventBus.subscribe(events.RECORDING_UPDATED, (recording) => {
+      const validatedRecording = validatePath(recording, {
+        actionName: 'onRecordingUpdated',
+        location: 'paths/api.js',
+        direction: 'outgoing',
+        moduleFrom: 'paths',
+        moduleTo: 'client'
+      });
+      callback(validatedRecording);
+    });
   },
   
   onRecordingPointAdded(callback) {
-    return eventBus.subscribe(events.RECORDING_POINT_ADDED, callback);
+    return eventBus.subscribe(events.RECORDING_POINT_ADDED, (data) => {
+      const validatedPoint = validatePathPoint(data.point, {
+        actionName: 'onRecordingPointAdded',
+        location: 'paths/api.js',
+        direction: 'outgoing',
+        moduleFrom: 'paths',
+        moduleTo: 'client'
+      });
+      callback({
+        point: validatedPoint,
+        recordingId: data.recordingId
+      });
+    });
   },
   
   onRecordingStatusChange(callback) {
@@ -80,7 +207,16 @@ export const api = {
   },
   
   onRecordingStatsUpdated(callback) {
-    return eventBus.subscribe(events.RECORDING_STATS_UPDATED, callback);
+    return eventBus.subscribe(events.RECORDING_STATS_UPDATED, (stats) => {
+      const validatedStats = validateRecordingStats(stats, {
+        actionName: 'onRecordingStatsUpdated',
+        location: 'paths/api.js',
+        direction: 'outgoing',
+        moduleFrom: 'paths',
+        moduleTo: 'client'
+      });
+      callback(validatedStats);
+    });
   },
   
   onRecordingError(callback) {
@@ -92,6 +228,15 @@ export const api = {
   },
   
   onPathUpdated(callback) {
-    return eventBus.subscribe(events.PATH_UPDATED, callback);
+    return eventBus.subscribe(events.PATH_UPDATED, (path) => {
+      const validatedPath = validatePath(path, {
+        actionName: 'onPathUpdated',
+        location: 'paths/api.js',
+        direction: 'outgoing',
+        moduleFrom: 'paths',
+        moduleTo: 'client'
+      });
+      callback(validatedPath);
+    });
   }
 };
